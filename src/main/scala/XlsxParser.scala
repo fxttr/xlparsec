@@ -6,7 +6,6 @@ import io.circe.parser._
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.apache.spark.sql.{DataFrame, SparkSession, Row}
 import org.apache.spark.sql.types._
-import cats.implicits._
 
 object XlsxParser {
   def parse(filePath: String, config: XlsxConfig)(implicit spark: SparkSession): Map[String, Map[String, Either[Throwable, DataFrame]]] = {
@@ -38,7 +37,27 @@ object XlsxParser {
 
           val schema = StructType(scope.columns.map(c => StructField(c.name, StringType, nullable = true)))
           val rdd = spark.sparkContext.parallelize(rows)
-          Right(spark.createDataFrame(rdd, schema))
+          var df = spark.createDataFrame(rdd, schema)
+
+          scope.vcolumns.foreach { vcol =>
+            val vcolStartCell = vcol.read_range.start_cell
+            val (vcolStartRow, vcolStartCol) = toCoordinate(vcolStartCell)
+
+            val vcolRows = (vcolStartRow until sheet.getLastRowNum).toList.map { rowIndex =>
+              val row = sheet.getRow(rowIndex)
+              val cell = row.getCell(vcolStartCol)
+              val cellValue = cell.getStringCellValue
+              Row(cellValue)
+            }
+
+            val vcolSchema = StructType(Array(StructField(vcol.name, StringType, nullable = true)))
+            val vcolRdd = spark.sparkContext.parallelize(vcolRows)
+            val vcolDf = spark.createDataFrame(vcolRdd, vcolSchema)
+
+            df = df.withColumn(vcol.name, vcolDf(vcol.name))
+          }
+
+          Right(df)
         } catch {
           case e: Throwable => Left(e)
         }

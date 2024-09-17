@@ -3,22 +3,15 @@ package de.fxttr.scala.xlparsec
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto._
 
-case class Transformation(
-  `type`: String,
-  parameters: Option[Map[String, String]]
-)
-
-object Transformation {
-  implicit val decoder: Decoder[Transformation] = deriveDecoder[Transformation]
-  implicit val encoder: Encoder[Transformation] = deriveEncoder[Transformation]
-}
+import io.circe._
+import io.circe.generic.semiauto._
+import io.circe.parser._
 
 case class Column(
   name: String,
   index: Int,
   `type`: String,
   format: Option[String],
-  transformations: Option[List[Transformation]]
 )
 
 object Column {
@@ -26,15 +19,11 @@ object Column {
   implicit val encoder: Encoder[Column] = deriveEncoder[Column]
 }
 
-case class Filter(
-  column: String,
-  condition: String,
-  value: String
-)
+case class VColumn(name: String, read_range: ReadRange, transform: String)
 
-object Filter {
-  implicit val decoder: Decoder[Filter] = deriveDecoder[Filter]
-  implicit val encoder: Encoder[Filter] = deriveEncoder[Filter]
+object VColumn {
+  implicit val decoder: Decoder[VColumn] = deriveDecoder[VColumn]
+  implicit val encoder: Encoder[VColumn] = deriveEncoder[VColumn]
 }
 
 case class ReadRange(
@@ -52,7 +41,7 @@ case class Scope(
   read_range: ReadRange,
   description: Option[String],
   columns: List[Column],
-  filters: Option[List[Filter]]
+  vcolumns: List[VColumn]
 )
 
 object Scope {

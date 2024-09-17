@@ -18,6 +18,7 @@
                   pkgs.metals
                   pkgs.openjdk22
                   pkgs.coursier
+                  pkgs.spark3
                 ];
               };
           }
