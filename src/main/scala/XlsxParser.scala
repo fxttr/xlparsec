@@ -62,8 +62,7 @@ object XlsxParser {
   private def createDataFrame(rows: List[Row], scope: Scope)(implicit spark: SparkSession): Either[Throwable, DataFrame] = {
     Try {
       val schema = StructType(scope.columns.map(c => StructField(c.name, StringType, nullable = true)))
-      val rdd = spark.sparkContext.parallelize(rows)
-      spark.createDataFrame(rdd, schema)
+      spark.createDataFrame(spark.sparkContext.parallelize(rows), schema)
     }.toEither
   }
 
@@ -82,19 +81,15 @@ object XlsxParser {
       val (startRow, startCol) = toCoordinate(vcol.read_range.start_cell)
       val (endRow, endCol) = toCoordinate(vcol.read_range.end_cell)
       val rows = (startRow until endRow).toList.map { rowIndex =>
-        val cell = sheet.getRow(rowIndex).getCell(startCol)
-        Row(cell.getStringCellValue)
+        Row(sheet.getRow(rowIndex).getCell(startCol).getStringCellValue)
       }
       val schema = StructType(Array(StructField(vcol.name, StringType, nullable = true)))
-      val rdd = spark.sparkContext.parallelize(rows)
-      spark.createDataFrame(rdd, schema)
+      spark.createDataFrame(spark.sparkContext.parallelize(rows), schema)
     }.toEither
   }
 
   private def toCoordinate(cell: String): (Int, Int) = {
     val reference = new CellReference(cell)
-    val rowIndex = reference.getRow
-    val columnIndex = reference.getCol
-    (rowIndex, columnIndex)
+    (reference.getRow, reference.getCol)
   }
 }
