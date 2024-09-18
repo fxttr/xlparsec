@@ -28,7 +28,7 @@ object VColumn {
 
 case class ReadRange(
   start_cell: String,
-  end_cell: Option[String]
+  end_cell: String
 )
 
 object ReadRange {

@@ -3,78 +3,98 @@ package de.fxttr.scala.xlparsec
 import io.circe._
 import io.circe.generic.auto._
 import io.circe.parser._
-import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import org.apache.poi.xssf.usermodel.{XSSFSheet, XSSFWorkbook}
 import org.apache.spark.sql.{DataFrame, SparkSession, Row}
 import org.apache.spark.sql.types._
+import scala.util.Try
+import org.apache.poi.ss.util.CellReference
 
 object XlsxParser {
   def parse(filePath: String, config: XlsxConfig)(implicit spark: SparkSession): Map[String, Map[String, Either[Throwable, DataFrame]]] = {
     val workbook = new XSSFWorkbook(filePath)
-    val sheetConfigs = config.sheets
-
-    val dataFrames: Map[String, Map[String, Either[Throwable, DataFrame]]] = sheetConfigs.map { sheetConfig =>
-      val sheet = workbook.getSheet(sheetConfig.name)
-
-      val scopeDataFrames: Map[String, Either[Throwable, DataFrame]] = sheetConfig.scopes.map { scope =>
-        val result = try {
-          val startCell = scope.read_range.start_cell
-          val (startRow, startCol) = toCoordinate(startCell)
-
-          val rows = (startRow until sheet.getLastRowNum).toList.map { rowIndex =>
-            val row = sheet.getRow(rowIndex)
-            val cells = scope.columns.map { column =>
-              val cell = row.getCell(column.index)
-              val cellValue = column.`type` match {
-                case "date" => cell.getDateCellValue.toString
-                case "string" => cell.getStringCellValue
-                case "double" => cell.getNumericCellValue.toString
-                case _ => ""
-              }
-              cellValue
-            }
-            Row(cells: _*)
-          }
-
-          val schema = StructType(scope.columns.map(c => StructField(c.name, StringType, nullable = true)))
-          val rdd = spark.sparkContext.parallelize(rows)
-          var df = spark.createDataFrame(rdd, schema)
-
-          scope.vcolumns.foreach { vcol =>
-            val vcolStartCell = vcol.read_range.start_cell
-            val (vcolStartRow, vcolStartCol) = toCoordinate(vcolStartCell)
-
-            val vcolRows = (vcolStartRow until sheet.getLastRowNum).toList.map { rowIndex =>
-              val row = sheet.getRow(rowIndex)
-              val cell = row.getCell(vcolStartCol)
-              val cellValue = cell.getStringCellValue
-              Row(cellValue)
-            }
-
-            val vcolSchema = StructType(Array(StructField(vcol.name, StringType, nullable = true)))
-            val vcolRdd = spark.sparkContext.parallelize(vcolRows)
-            val vcolDf = spark.createDataFrame(vcolRdd, vcolSchema)
-
-            df = df.withColumn(vcol.name, vcolDf(vcol.name))
-          }
-
-          Right(df)
-        } catch {
-          case e: Throwable => Left(e)
-        }
-
-        scope.name -> result
-      }.toMap
-
-      sheetConfig.name -> scopeDataFrames
+    
+    val dataFrames = config.sheets.map { Sheet =>
+      Sheet.name -> parseSheet(workbook.getSheet(Sheet.name), Sheet)
     }.toMap
 
     workbook.close()
     dataFrames
   }
 
+  private def parseSheet(sheet: XSSFSheet, Sheet: Sheet)(implicit spark: SparkSession): Map[String, Either[Throwable, DataFrame]] = {
+    Sheet.scopes.map { scope =>
+      scope.name -> parseScope(sheet, scope)
+    }.toMap
+  }
+
+  private def parseScope(sheet: XSSFSheet, scope: Scope)(implicit spark: SparkSession): Either[Throwable, DataFrame] = {
+    for {
+      rows <- extractRows(sheet, scope)
+      df   <- createDataFrame(rows, scope)
+      dfWithVCols <- addVirtualColumns(sheet, df, scope.vcolumns)
+    } yield dfWithVCols
+  }
+
+  private def extractRows(sheet: XSSFSheet, scope: Scope): Either[Throwable, List[Row]] = {
+    Try {
+      val (startRow, _) = toCoordinate(scope.read_range.start_cell)
+      val (endRow, _) = toCoordinate(scope.read_range.end_cell)
+      (startRow until endRow).toList.map { rowIndex =>
+        val row = sheet.getRow(rowIndex)
+        val cells = scope.columns.map { column =>
+          extractCellValue(row, column)
+        }
+        Row(cells: _*)
+      }
+    }.toEither
+  }
+
+  private def extractCellValue(row: org.apache.poi.ss.usermodel.Row, column: Column): String = {
+    val cell = row.getCell(column.index)
+    column.`type` match {
+      case "date"   => cell.getDateCellValue.toString
+      case "string" => cell.getStringCellValue
+      case "double" => cell.getNumericCellValue.toString
+      case _        => ""
+    }
+  }
+
+  private def createDataFrame(rows: List[Row], scope: Scope)(implicit spark: SparkSession): Either[Throwable, DataFrame] = {
+    Try {
+      val schema = StructType(scope.columns.map(c => StructField(c.name, StringType, nullable = true)))
+      val rdd = spark.sparkContext.parallelize(rows)
+      spark.createDataFrame(rdd, schema)
+    }.toEither
+  }
+
+  private def addVirtualColumns(sheet: XSSFSheet, df: DataFrame, vcolumns: List[VColumn])(implicit spark: SparkSession): Either[Throwable, DataFrame] = {
+    vcolumns.foldLeft[Either[Throwable, DataFrame]](Right(df)) { (dfAcc, vcol) =>
+      dfAcc.flatMap { currentDf =>
+        createVirtualColumn(sheet, vcol).map { vcolDf =>
+          currentDf.withColumn(vcol.name, vcolDf(vcol.name))
+        }
+      }
+    }
+  }
+
+  private def createVirtualColumn(sheet: XSSFSheet, vcol: VColumn)(implicit spark: SparkSession): Either[Throwable, DataFrame] = {
+    Try {
+      val (startRow, startCol) = toCoordinate(vcol.read_range.start_cell)
+      val (endRow, endCol) = toCoordinate(vcol.read_range.end_cell)
+      val rows = (startRow until endRow).toList.map { rowIndex =>
+        val cell = sheet.getRow(rowIndex).getCell(startCol)
+        Row(cell.getStringCellValue)
+      }
+      val schema = StructType(Array(StructField(vcol.name, StringType, nullable = true)))
+      val rdd = spark.sparkContext.parallelize(rows)
+      spark.createDataFrame(rdd, schema)
+    }.toEither
+  }
+
   private def toCoordinate(cell: String): (Int, Int) = {
-    val row = cell.tail.toInt - 1
-    val col = cell.head - 'A'
-    (row, col)
+    val reference = new CellReference(cell)
+    val rowIndex = reference.getRow
+    val columnIndex = reference.getCol
+    (rowIndex, columnIndex)
   }
 }
