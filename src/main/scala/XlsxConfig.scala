@@ -1,10 +1,11 @@
 package de.fxttr.scala.xlparsec
 
-import io.circe.Decoder
-import io.circe.Encoder
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto._
+
 import io.circe._
 import io.circe.generic.semiauto._
-import io.circe.generic.semiauto._
+import io.circe.parser._
 
 case class Column(
   name: String,
@@ -66,4 +67,7 @@ case class XlsxConfig(
 object XlsxConfig {
   implicit val decoder: Decoder[XlsxConfig] = deriveDecoder[XlsxConfig]
   implicit val encoder: Encoder[XlsxConfig] = deriveEncoder[XlsxConfig]
+
+  def decodeConfig(config: String): Either[Throwable, XlsxConfig] =
+    decode[XlsxConfig](config)
 }

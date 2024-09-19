@@ -21,7 +21,7 @@ object Xlparsec {
   def toDFs(filePath: String, config: String)(implicit
     spark: SparkSession,
   ): Either[Throwable, Map[String, Map[String, Either[Throwable, DataFrame]]]] =
-    decode[XlsxConfig](config) match {
+    decodeConfig(config) match {
       case Right(xlsxConfig) => Right(XlsxParser.parse(filePath, xlsxConfig))
       case Left(e)           => Left(e)
     }
