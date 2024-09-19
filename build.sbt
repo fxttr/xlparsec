@@ -32,3 +32,17 @@ libraryDependencies ++= Seq(
     // Testing
     "org.scalatest" %% "scalatest" % "3.2.11" % Test    
 )
+
+scalacOptions ++= Seq(
+  "-deprecation",
+  "-feature",
+  "-unchecked",
+  "-Ywarn-unused"
+)
+inThisBuild(
+  List(
+    scalaVersion := "2.12.20",
+    semanticdbEnabled := true,
+    semanticdbVersion := scalafixSemanticdb.revision
+  )
+)

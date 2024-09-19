@@ -1,8 +1,10 @@
 package de.fxttr.scala.xlparsec
 
-import XlsxConfig._
 import io.circe.parser._
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.SparkSession
+
+import XlsxConfig._
 
 object Xlparsec {
 

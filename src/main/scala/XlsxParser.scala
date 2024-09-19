@@ -1,13 +1,13 @@
 package de.fxttr.scala.xlparsec
-
-import io.circe._
-import io.circe.generic.auto._
-import io.circe.parser._
-import org.apache.poi.xssf.usermodel.{XSSFSheet, XSSFWorkbook}
-import org.apache.spark.sql.{DataFrame, Row, SparkSession}
-import org.apache.spark.sql.types._
 import scala.util.Try
+
 import org.apache.poi.ss.util.CellReference
+import org.apache.poi.xssf.usermodel.XSSFSheet
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.types._
 
 object XlsxParser {
   def parse(filePath: String, config: XlsxConfig)(implicit
