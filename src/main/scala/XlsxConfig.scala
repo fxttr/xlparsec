@@ -28,7 +28,7 @@ object VColumn {
 
 case class ReadRange(
   start_cell: String,
-  end_cell: String
+  end_cell: String,
 )
 
 object ReadRange {
@@ -41,7 +41,7 @@ case class Scope(
   read_range: ReadRange,
   description: Option[String],
   columns: List[Column],
-  vcolumns: List[VColumn]
+  vcolumns: List[VColumn],
 )
 
 object Scope {
@@ -52,7 +52,7 @@ object Scope {
 case class Sheet(
   displayName: String,
   name: String,
-  scopes: List[Scope]
+  scopes: List[Scope],
 )
 
 object Sheet {
@@ -61,7 +61,7 @@ object Sheet {
 }
 
 case class XlsxConfig(
-  sheets: List[Sheet]
+  sheets: List[Sheet],
 )
 
 object XlsxConfig {
