@@ -1,79 +1,66 @@
 {
-    "sheets": [
-      {
-        "displayName": "Financial Data",
-        "name": "financial_data",
-        "scopes": [
-          {
-            "name": "Main Scope",
-            "read_range": {
-              "start_cell": "D2",
-              "end_cell": "K14"
+  "sheets": [
+    {
+      "displayName": "Financial Data",
+      "name": "Tabellenblatt1",
+      "scopes": [
+        {
+          "name": "Main Scope",
+          "read_range": {
+            "start_cell": "D4",
+            "end_cell": "I14"
+          },
+          "description": "Contains the main financial data for different departments and sub-departments.",
+          "columns": [
+            {
+              "name": "March_P",
+              "index": 0,
+              "type": "float",
+              "format": "#,##0.00"
             },
-            "description": "Contains the main financial data for different departments and sub-departments.",
-            "columns": [
-              {
-                "name": "March_P",
-                "index": 1,
-                "type": "float",
-                "format": "#,##0.00"
+            {
+              "name": "March_C",
+              "index": 1,
+              "type": "float",
+              "format": "#,##0.00"
+            },
+            {
+              "name": "April_P",
+              "index": 2,
+              "type": "float",
+              "format": "#,##0.00"
+            },
+            {
+              "name": "April_C",
+              "index": 3,
+              "type": "float",
+              "format": "#,##0.00"
+            },
+            {
+              "name": "May_P",
+              "index": 4,
+              "type": "float",
+              "format": "#,##0.00"
+            },
+            {
+              "name": "May_C",
+              "index": 5,
+              "type": "float",
+              "format": "#,##0.00"
+            }
+          ],
+          "vcolumns": [
+            {
+              "name": "Departments",
+              "read_range": {
+                "start_cell": "A4",
+                "end_cell": "D14"
               },
-              {
-                "name": "March_C",
-                "index": 2,
-                "type": "float",
-                "format": "#,##0.00"
-              },
-              {
-                "name": "April_P",
-                "index": 3,
-                "type": "float",
-                "format": "#,##0.00"
-              },
-              {
-                "name": "April_C",
-                "index": 4,
-                "type": "float",
-                "format": "#,##0.00"
-              },
-              {
-                "name": "May_P",
-                "index": 5,
-                "type": "float",
-                "format": "#,##0.00"
-              },
-              {
-                "name": "May_C",
-                "index": 6,
-                "type": "float",
-                "format": "#,##0.00"
-              },
-              {
-                "name": "June_P",
-                "index": 7,
-                "type": "float",
-                "format": "#,##0.00"
-              },
-              {
-                "name": "June_C",
-                "index": 8,
-                "type": "float",
-                "format": "#,##0.00"
-              }
-            ],
-            "vcolumns": [
-              {
-                "name": "Aggregated_Departments",
-                "read_range": {
-                  "start_cell": "A1",
-                  "end_cell": "C14"
-                },
-                "transform": "merge"
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  }
-  
+              "transform": "merge"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

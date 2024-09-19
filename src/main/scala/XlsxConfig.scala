@@ -1,9 +1,9 @@
 package de.fxttr.scala.xlparsec
 
-import io.circe.{Decoder, Encoder}
-import io.circe.generic.semiauto._
-
+import io.circe.Decoder
+import io.circe.Encoder
 import io.circe._
+import io.circe.generic.semiauto._
 import io.circe.generic.semiauto._
 import io.circe.parser._
 
@@ -19,7 +19,14 @@ object Column {
   implicit val encoder: Encoder[Column] = deriveEncoder[Column]
 }
 
-case class VColumn(name: String, read_range: ReadRange, transform: String)
+case class VFixColumn(name: String, index: Int)
+
+object VFixColumn {
+  implicit val decoder: Decoder[VFixColumn] = deriveDecoder[VFixColumn]
+  implicit val encoder: Encoder[VFixColumn] = deriveEncoder[VFixColumn]
+}
+
+case class VColumn(name: String, read_range: Option[ReadRange], transform: String, columns: Option[List[VFixColumn]])
 
 object VColumn {
   implicit val decoder: Decoder[VColumn] = deriveDecoder[VColumn]
@@ -60,7 +67,32 @@ object Sheet {
   implicit val encoder: Encoder[Sheet] = deriveEncoder[Sheet]
 }
 
+case class Connection(
+  adapter: String,
+  path: String,
+  server: Option[String],
+  share: Option[String],
+  authentication: Option[Authentication],
+)
+
+object Connection {
+  implicit val decoder: Decoder[Connection] = deriveDecoder[Connection]
+  implicit val encoder: Encoder[Connection] = deriveEncoder[Connection]
+}
+
+case class Authentication(
+  username: String,
+  password: String,
+)
+
+object Authentication {
+  implicit val decoder: Decoder[Authentication] = deriveDecoder[Authentication]
+  implicit val encoder: Encoder[Authentication] = deriveEncoder[Authentication]
+}
+
 case class XlsxConfig(
+  context: String,
+  connection: Connection,
   sheets: List[Sheet],
 )
 
